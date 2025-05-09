@@ -1,103 +1,139 @@
-import Image from "next/image";
+import Link from "next/link"
+import { ArrowRight, Utensils, GraduationCap, HousePlugIcon } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import ServiceCard from "@/components/service-card"
+import HeroSection from "@/components/hero-section"
+import CabinPreview from "@/components/cabin-preview"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // Datos de ejemplo para los servicios
+  const services = [
+    {
+      id: "restaurant",
+      title: "Restaurante",
+      description: "Disfruta de nuestra cocina local con ingredientes frescos y vistas al mar.",
+      icon: <Utensils className="h-8 w-8 text-white" />,
+      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/fp2dllgckkuvdbzdstd0",
+    },
+    {
+      id: "cabins",
+      title: "Cabañas",
+      description: "Alojamiento de lujo con todas las comodidades en un entorno natural paradisíaco.",
+      icon: <HousePlugIcon className="h-8 w-8 text-white" />,
+      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/nmf22jqgzck4qywcgcxp",
+    },
+    {
+      id: "internships",
+      title: "Pasantías",
+      description: "Programas de formación en hotelería y turismo sostenible en un entorno real.",
+      icon: <GraduationCap className="h-8 w-8 text-white" />,
+      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/lcobtzuxhamncqbnn4ei",
+    },
+  ]
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Datos de ejemplo para las cabañas
+  const cabins = [
+    {
+      id: "ocean-view",
+      name: "Cabaña Vista al Mar",
+      description: "Espectaculares vistas al océano desde una cabaña de lujo con terraza privada.",
+      price: 250,
+      capacity: 2,
+      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/cabanas/jsski9c2n55zzfqemq8c",
+    },
+    {
+      id: "garden-retreat",
+      name: "Retiro del Jardín",
+      description: "Cabaña rodeada de vegetación tropical con jacuzzi exterior privado.",
+      price: 200,
+      capacity: 2,
+      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/cabanas/su8cngobnilfory7yjgu",
+    },
+    {
+      id: "family-cabin",
+      name: "Cabaña Familiar",
+      description: "Espaciosa cabaña para familias con dos habitaciones y área de juegos.",
+      price: 350,
+      capacity: 4,
+      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/cabanas/hopnsjt96lta0jiccfh3",
+    },
+  ]
+
+  return (
+    <main className="flex min-h-screen flex-col items-center">
+      <HeroSection />
+
+      {/* Sección de Servicios */}
+      <section id="servicios" className="w-full py-20 px-4 md:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestros Servicios</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Descubre todo lo que My Little Island tiene para ofrecer, desde gastronomía excepcional hasta alojamiento
+              de lujo y oportunidades de aprendizaje.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {services.map((service) => (
+              <ServiceCard
+                key={service.id}
+                title={service.title}
+                description={service.description}
+                icon={service.icon}
+                imageUrl={service.imageUrl}
+              />
+            ))}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </section>
+
+      {/* Sección de Cabañas */}
+      <section id="cabanas" className="w-full py-20 px-4 md:px-8 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nuestras Cabañas</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Alojamiento exclusivo diseñado para brindar confort y privacidad en medio del paraíso.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {cabins.map((cabin) => (
+              <CabinPreview
+                key={cabin.id}
+                id={cabin.id}
+                name={cabin.name}
+                description={cabin.description}
+                price={cabin.price}
+                capacity={cabin.capacity}
+                imageUrl={cabin.imageUrl}
+              />
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button asChild size="lg">
+              <Link href="/cabanas" className="flex items-center gap-2">
+                Ver todas las cabañas
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Sección de Contacto */}
+      <section id="contacto" className="w-full py-20 px-4 md:px-8 bg-primary/5">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">¿Listo para visitarnos?</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+            Reserva tu estancia en My Little Island y vive una experiencia inolvidable.
+          </p>
+          <Button size="lg">Reservar ahora</Button>
+        </div>
+      </section>
+    </main>
+  )
 }
