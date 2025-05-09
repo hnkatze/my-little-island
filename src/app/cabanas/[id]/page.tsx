@@ -9,9 +9,24 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Card } from "@/components/ui/card"
 import BookingForm from "@/components/booking-form"
+import { useEffect, useState } from "react"
+
+interface Cabin {
+  id: string;
+  name: string;
+  description: string;
+  longDescription: string;
+  price: number;
+  capacity: number;
+  size: number; // m²
+  bedType: string;
+  imageUrl: string;
+  galleryImages: string[];
+  amenities: string[];
+}
 
 // En un proyecto real, esta información vendría de una base de datos
-const cabinsData = {
+const cabinsData: Record<string, Cabin> = {
   "ocean-view": {
     id: "ocean-view",
     name: "Cabaña Vista al Mar",
@@ -78,13 +93,29 @@ const cabinsData = {
   },
 }
 
-export default function CabinDetailPage({ params }: { params: { id: string } }) {
-  const cabin = cabinsData[params.id as keyof typeof cabinsData]
+export default  function CabinDetailPage({ params }: {  params: Promise<{ id: string }> }) {
+  const [cabin, setCabin] = useState<Cabin | null>(null)
 
-  // Si no existe la cabaña, redirigir a 404
+  useEffect(() => {
+    const fetchCabin = async () => {
+      const { id } = await params
+      const selectedCabin = cabinsData[id]
+
+      // Si no existe la cabaña, redirigir a 404
+      if (!selectedCabin) {
+        notFound()
+      } else {
+        setCabin(selectedCabin)
+      }
+    }
+
+    fetchCabin()
+  }, [params])
+
   if (!cabin) {
-    notFound()
+    return null // O un loader mientras se carga la información
   }
+  
 
   return (
     <main className="flex min-h-screen flex-col">
