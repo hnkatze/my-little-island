@@ -10,6 +10,7 @@ export interface Booking {
     phone: string
     specialRequests?: string
     nights: number
+    price: number
     subtotal: number
     taxes: number
     total: number
