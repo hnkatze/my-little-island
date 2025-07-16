@@ -32,7 +32,7 @@ export default function BookingConfirmationPage() {
       try {
         const result = await getBookingById(bookingId)
 
-        if (result.success) {
+        if (result.success && result.booking) {
           setBooking(result.booking)
         } else {
           setError(result.error || "No se pudo encontrar la reserva")

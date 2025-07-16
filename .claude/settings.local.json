@@ -6,7 +6,8 @@
       "Bash(npx prisma generate:*)",
       "Bash(npx prisma db seed:*)",
       "Bash(npx prisma:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

@@ -8,7 +8,7 @@ export interface Booking {
     name: string
     email: string
     phone: string
-    specialRequests?: string
+    specialRequests?: string | null
     nights: number
     price: number
     subtotal: number

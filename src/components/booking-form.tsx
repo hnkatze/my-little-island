@@ -51,7 +51,7 @@ export default function BookingForm({ cabinId, cabinName, price, maxGuests }: Bo
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-  const { isSignedIn, user } = useUser()
+  const { isSignedIn } = useUser()
 
   // Obtener la fecha de hoy y mañana para valores iniciales
   const today = new Date()

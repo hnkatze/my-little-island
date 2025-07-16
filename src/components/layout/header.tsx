@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X, Home, Briefcase, House, Phone, Calendar } from "lucide-react"
+import { Menu, Home, Briefcase, House, Phone, Calendar } from "lucide-react"
 import {
   SignInButton,
   SignUpButton,
