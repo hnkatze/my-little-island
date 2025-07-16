@@ -8,6 +8,7 @@ import { CalendarIcon, Loader2 } from "lucide-react"
 import { format, addDays, differenceInDays } from "date-fns"
 import { es } from "date-fns/locale"
 import { useRouter } from "next/navigation"
+import { useUser, SignInButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -50,6 +51,7 @@ export default function BookingForm({ cabinId, cabinName, price, maxGuests }: Bo
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
+  const { isSignedIn, user } = useUser()
 
   // Obtener la fecha de hoy y mañana para valores iniciales
   const today = new Date()
@@ -149,19 +151,24 @@ export default function BookingForm({ cabinId, cabinName, price, maxGuests }: Bo
     setIsSubmitting(true)
 
     try {
+      // Asegurarnos de que las fechas sean objetos Date válidos
       const bookingData = {
         ...data,
+        checkIn: new Date(data.checkIn),
+        checkOut: new Date(data.checkOut),
         cabinId,
         cabinName,
         nights,
+        price,
         subtotal,
         taxes,
         total,
       }
 
+      console.log("Enviando reserva:", bookingData)
       const result = await createBooking(bookingData)
 
-      if (result.success) {
+      if (result.success && result.bookingId) {
         toast({
           title: "¡Reserva confirmada!",
           description: `Tu reserva para ${cabinName} ha sido confirmada. Hemos enviado los detalles a tu correo.`,
@@ -170,12 +177,17 @@ export default function BookingForm({ cabinId, cabinName, price, maxGuests }: Bo
         // Redirigir a la página de confirmación
         router.push(`/reservas/confirmacion?id=${result.bookingId}`)
       } else {
-        throw new Error(result.error || "Error al procesar la reserva")
+        toast({
+          title: "Error",
+          description: result.error || "Error al procesar la reserva",
+          variant: "destructive",
+        })
       }
-    } catch  {
+    } catch (error) {
+      console.error("Error al crear reserva:", error)
       toast({
         title: "Error",
-        description: "Ocurrió un error al procesar tu reserva. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "Ocurrió un error al procesar tu reserva. Inténtalo de nuevo.",
         variant: "destructive",
       })
     } finally {
@@ -400,17 +412,25 @@ export default function BookingForm({ cabinId, cabinName, price, maxGuests }: Bo
           </div>
         </div>
 
-        {/* Botón de reserva - solo habilitado si está disponible */}
-        <Button type="submit" className="w-full" disabled={!isAvailable || isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Procesando...
-            </>
-          ) : (
-            "Reservar ahora"
-          )}
-        </Button>
+        {/* Botón de reserva - requiere autenticación */}
+        {!isSignedIn ? (
+          <SignInButton mode="modal">
+            <Button type="button" className="w-full">
+              Iniciar sesión para reservar
+            </Button>
+          </SignInButton>
+        ) : (
+          <Button type="submit" className="w-full" disabled={!isAvailable || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              "Reservar ahora"
+            )}
+          </Button>
+        )}
       </form>
     </Form>
   )

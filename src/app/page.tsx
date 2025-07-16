@@ -1,13 +1,23 @@
 import Link from "next/link"
-import { ArrowRight, Utensils, GraduationCap, HousePlugIcon } from "lucide-react"
-
+import Image from "next/image"
+import { ArrowRight, Utensils, GraduationCap, HousePlugIcon, MapPin, Users, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import ServiceCard from "@/components/service-card"
 import HeroSection from "@/components/hero-section"
-import CabinPreview from "@/components/cabin-preview"
+import { prisma } from "@/lib/prisma"
 
-export default function Home() {
-  // Datos de ejemplo para los servicios
+export default async function Home() {
+  // Obtener las primeras 3 cabañas desde la base de datos
+  const cabins = await prisma.cabin.findMany({
+    take: 3,
+    orderBy: {
+      price: 'asc'
+    }
+  })
+
+  // Datos para los servicios
   const services = [
     {
       id: "restaurant",
@@ -29,34 +39,6 @@ export default function Home() {
       description: "Programas de formación en hotelería y turismo sostenible en un entorno real.",
       icon: <GraduationCap className="h-8 w-8 text-white" />,
       imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/lcobtzuxhamncqbnn4ei",
-    },
-  ]
-
-  // Datos de ejemplo para las cabañas
-  const cabins = [
-    {
-      id: "ocean-view",
-      name: "Cabaña Vista al Mar",
-      description: "Espectaculares vistas al océano desde una cabaña de lujo con terraza privada.",
-      price: 250,
-      capacity: 2,
-      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/cabanas/jsski9c2n55zzfqemq8c",
-    },
-    {
-      id: "garden-retreat",
-      name: "Retiro del Jardín",
-      description: "Cabaña rodeada de vegetación tropical con jacuzzi exterior privado.",
-      price: 200,
-      capacity: 2,
-      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/cabanas/su8cngobnilfory7yjgu",
-    },
-    {
-      id: "family-cabin",
-      name: "Cabaña Familiar",
-      description: "Espaciosa cabaña para familias con dos habitaciones y área de juegos.",
-      price: 350,
-      capacity: 4,
-      imageUrl: "https://res.cloudinary.com/djluqrprg/image/upload/f_auto,q_auto/v1/mylittleisland/cabanas/hopnsjt96lta0jiccfh3",
     },
   ]
 
@@ -101,15 +83,51 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {cabins.map((cabin) => (
-              <CabinPreview
-                key={cabin.id}
-                id={cabin.id}
-                name={cabin.name}
-                description={cabin.description}
-                price={cabin.price}
-                capacity={cabin.capacity}
-                imageUrl={cabin.imageUrl}
-              />
+              <Card key={cabin.id} className="group overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div className="relative h-64 overflow-hidden">
+                  <Image
+                    src={cabin.images[0]}
+                    alt={cabin.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-2xl">{cabin.name}</CardTitle>
+                  <CardDescription className="line-clamp-2">{cabin.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {cabin.amenities.slice(0, 3).map((amenity) => (
+                      <Badge key={amenity} variant="secondary">
+                        {amenity}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      <span>Hasta {cabin.maxGuests} huéspedes</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      <span>Vista al mar</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-5 h-5" />
+                    <span className="text-2xl font-bold">${cabin.price}</span>
+                    <span className="text-muted-foreground">/noche</span>
+                  </div>
+                  <Button asChild>
+                    <Link href={`/cabanas/${cabin.id}`}>Ver detalles</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
             ))}
           </div>
 
@@ -131,7 +149,9 @@ export default function Home() {
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
             Reserva tu estancia en My Little Island y vive una experiencia inolvidable.
           </p>
-          <Button size="lg">Reservar ahora</Button>
+          <Button size="lg" asChild>
+            <Link href="/cabanas">Reservar ahora</Link>
+          </Button>
         </div>
       </section>
     </main>

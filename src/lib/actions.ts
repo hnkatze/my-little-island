@@ -2,11 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-
-// Simulación de base de datos para reservas
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const bookings: any[] = []
-let bookingIdCounter = 1
+import { prisma } from "@/lib/prisma"
+import { auth } from "@clerk/nextjs/server"
 
 // Esquema para validar datos de disponibilidad
 const availabilitySchema = z.object({
@@ -27,9 +24,16 @@ const bookingSchema = z.object({
   phone: z.string().min(6),
   specialRequests: z.string().optional(),
   nights: z.number().int().positive(),
+  price: z.number().positive(),
   subtotal: z.number().positive(),
   taxes: z.number().nonnegative(),
   total: z.number().positive(),
+}).refine(data => data.checkOut > data.checkIn, {
+  message: "La fecha de salida debe ser posterior a la de entrada",
+  path: ["checkOut"]
+}).refine(data => data.checkIn >= new Date(new Date().setHours(0, 0, 0, 0)), {
+  message: "No se pueden hacer reservas en fechas pasadas",
+  path: ["checkIn"]
 })
 
 // Función para verificar disponibilidad
@@ -42,32 +46,44 @@ export async function checkAvailability(data: {
     // Validar datos
     const { cabinId, checkIn, checkOut } = availabilitySchema.parse(data)
 
-    // Simular una llamada a la API o base de datos
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    // Simulación de lógica de disponibilidad
-    // En un caso real, consultaríamos una base de datos
-
-    // Para demostración, hacemos que algunas fechas no estén disponibles
-    const checkInTime = checkIn.getTime()
-    const isWeekend = checkIn.getDay() === 0 || checkIn.getDay() === 6
-
-    // Verificar si ya existe una reserva para esas fechas
-    const existingBooking = bookings.some((booking) => {
-      const bookingCheckIn = new Date(booking.checkIn).getTime()
-      const bookingCheckOut = new Date(booking.checkOut).getTime()
-
-      return (
-        booking.cabinId === cabinId &&
-        ((checkInTime >= bookingCheckIn && checkInTime < bookingCheckOut) ||
-          (bookingCheckIn >= checkInTime && bookingCheckIn < new Date(checkOut).getTime()))
-      )
+    // Verificar si la cabaña existe
+    const cabin = await prisma.cabin.findUnique({
+      where: { id: cabinId }
     })
 
-    // Para demostración, hacemos que los fines de semana tengan menos disponibilidad
-    const randomAvailability = Math.random() > (isWeekend ? 0.3 : 0.1)
+    if (!cabin) {
+      throw new Error("Cabaña no encontrada")
+    }
 
-    return !existingBooking && randomAvailability
+    // Buscar reservas que se solapan con las fechas solicitadas
+    const conflictingBookings = await prisma.booking.findMany({
+      where: {
+        cabinId,
+        status: { in: ["CONFIRMED", "PENDING"] },
+        OR: [
+          {
+            AND: [
+              { checkIn: { lte: checkIn } },
+              { checkOut: { gt: checkIn } }
+            ]
+          },
+          {
+            AND: [
+              { checkIn: { lt: checkOut } },
+              { checkOut: { gte: checkOut } }
+            ]
+          },
+          {
+            AND: [
+              { checkIn: { gte: checkIn } },
+              { checkOut: { lte: checkOut } }
+            ]
+          }
+        ]
+      }
+    })
+
+    return conflictingBookings.length === 0
   } catch (error) {
     console.error("Error al verificar disponibilidad:", error)
     throw new Error("No se pudo verificar la disponibilidad")
@@ -76,36 +92,72 @@ export async function checkAvailability(data: {
 
 // Función para crear una reserva
 export async function createBooking(data: unknown) {
+  console.log("createBooking recibió:", data)
+  
   try {
-    // Validar datos
-    const validatedData = bookingSchema.parse(data)
+    // Obtener el usuario autenticado
+    const { userId } = await auth()
+    console.log("Usuario autenticado:", userId)
 
-    // Simular una llamada a la API o base de datos
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    // Crear un ID único para la reserva
-    const bookingId = `RES-${bookingIdCounter++}-${Date.now().toString().slice(-4)}`
-
-    // Crear objeto de reserva
-    const newBooking = {
-      id: bookingId,
-      ...validatedData,
-      status: "confirmed",
-      createdAt: new Date(),
+    if (!userId) {
+      return {
+        success: false,
+        error: "Debes iniciar sesión para hacer una reserva",
+      }
     }
 
-    // Guardar la reserva en nuestra "base de datos" simulada
-    bookings.push(newBooking)
+    // Validar datos
+    const validatedData = bookingSchema.parse(data)
+    console.log("Datos validados:", validatedData)
 
-    // En un caso real, enviaríamos un email de confirmación aquí
-    console.log("Nueva reserva creada:", newBooking)
+    // Verificar disponibilidad nuevamente antes de crear la reserva
+    const isAvailable = await checkAvailability({
+      cabinId: validatedData.cabinId,
+      checkIn: validatedData.checkIn,
+      checkOut: validatedData.checkOut,
+    })
+
+    if (!isAvailable) {
+      return {
+        success: false,
+        error: "La cabaña ya no está disponible para las fechas seleccionadas",
+      }
+    }
+
+    // Crear la reserva en la base de datos
+    const booking = await prisma.booking.create({
+      data: {
+        cabinId: validatedData.cabinId,
+        userId,
+        guestName: validatedData.name,
+        guestEmail: validatedData.email,
+        guestPhone: validatedData.phone,
+        checkIn: validatedData.checkIn,
+        checkOut: validatedData.checkOut,
+        guests: parseInt(validatedData.guests),
+        specialRequests: validatedData.specialRequests,
+        nights: validatedData.nights,
+        price: validatedData.price,
+        subtotal: validatedData.subtotal,
+        taxes: validatedData.taxes,
+        total: validatedData.total,
+        status: "CONFIRMED",
+      },
+      include: {
+        cabin: true,
+      },
+    })
+
+    // TODO: Enviar email de confirmación
+    console.log("Nueva reserva creada:", booking)
 
     // Revalidar la ruta para actualizar los datos
-    revalidatePath("/cabanas/[id]")
+    revalidatePath("/cabanas")
+    revalidatePath(`/cabanas/${validatedData.cabinId}`)
 
     return {
       success: true,
-      bookingId,
+      bookingId: booking.id,
     }
   } catch (error) {
     console.error("Error al crear la reserva:", error)
@@ -128,11 +180,23 @@ export async function createBooking(data: unknown) {
 // Función para obtener una reserva por ID
 export async function getBookingById(id: string) {
   try {
-    // Simular una llamada a la API o base de datos
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    // Obtener el usuario autenticado
+    const { userId } = await auth()
 
-    // Buscar la reserva en nuestra "base de datos" simulada
-    const booking = bookings.find((b) => b.id === id)
+    if (!userId) {
+      return {
+        success: false,
+        error: "Debes iniciar sesión para ver los detalles de la reserva",
+      }
+    }
+
+    // Buscar la reserva en la base de datos
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        cabin: true,
+      },
+    })
 
     if (!booking) {
       return {
@@ -141,15 +205,79 @@ export async function getBookingById(id: string) {
       }
     }
 
+    // Verificar que el usuario es el dueño de la reserva
+    if (booking.userId !== userId) {
+      return {
+        success: false,
+        error: "No tienes permiso para ver esta reserva",
+      }
+    }
+
+    // Formatear la respuesta para que coincida con la interfaz esperada
+    const formattedBooking = {
+      id: booking.id,
+      cabinId: booking.cabinId,
+      cabinName: booking.cabin.name,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      guests: booking.guests.toString(),
+      name: booking.guestName,
+      email: booking.guestEmail,
+      phone: booking.guestPhone,
+      specialRequests: booking.specialRequests,
+      nights: booking.nights,
+      price: booking.price,
+      subtotal: booking.subtotal,
+      taxes: booking.taxes,
+      total: booking.total,
+      status: booking.status,
+      createdAt: booking.createdAt,
+    }
+
     return {
       success: true,
-      booking,
+      booking: formattedBooking,
     }
   } catch (error) {
     console.error("Error al obtener la reserva:", error)
     return {
       success: false,
       error: "No se pudo obtener la información de la reserva",
+    }
+  }
+}
+
+// Función para obtener todas las reservas del usuario
+export async function getUserBookings() {
+  try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return {
+        success: false,
+        error: "Debes iniciar sesión para ver tus reservas",
+      }
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: { userId },
+      include: {
+        cabin: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    return {
+      success: true,
+      bookings,
+    }
+  } catch (error) {
+    console.error("Error al obtener las reservas:", error)
+    return {
+      success: false,
+      error: "No se pudieron obtener las reservas",
     }
   }
 }

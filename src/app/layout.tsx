@@ -1,9 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
 import Link from "next/link"
 import { Toaster } from "@/components/ui/toast"
+import Header from "@/components/layout/header"
 
 
 const inter = Inter({ subsets: ["latin"] })
@@ -20,55 +22,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
-        <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b">
-          <div className="container mx-auto flex h-16 items-center justify-between px-4">
-            <Link href="/" className="font-bold text-xl">
-              My Little Island
-            </Link>
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
-                Inicio
-              </Link>
-              <Link href="/#servicios" className="text-sm font-medium hover:text-primary transition-colors">
-                Servicios
-              </Link>
-              <Link href="/cabanas" className="text-sm font-medium hover:text-primary transition-colors">
-                Cabañas
-              </Link>
-              <Link href="/#contacto" className="text-sm font-medium hover:text-primary transition-colors">
-                Contacto
-              </Link>
-            </nav>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="#"
-                className="hidden sm:inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                Reservar
-              </Link>
-              <button className="md:hidden">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-menu"
-                >
-                  <line x1="4" x2="20" y1="12" y2="12"></line>
-                  <line x1="4" x2="20" y1="6" y2="6"></line>
-                  <line x1="4" x2="20" y1="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </header>
+    <ClerkProvider>
+      <html lang="es">
+        <body className={inter.className}>
+        <Header />
 
         {children}
 
@@ -177,5 +134,6 @@ export default function RootLayout({
         <Toaster />
       </body>
     </html>
+    </ClerkProvider>
   )
 }
